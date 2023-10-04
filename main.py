@@ -10,7 +10,7 @@ import requests
 load_dotenv()
 discord_bot_token = os.getenv("DISCORD_BOT_TOKEN")
 
-description = '''A general purpose research agent.'''
+description = '''A general purpose research agent. Type /research followed by the topic you would like to get a summary on.'''
 
 # Specify intents
 intents = discord.Intents.default()
@@ -48,7 +48,8 @@ async def on_message(message):
     if message.content.startswith('/research'):
         # Extract the research query from the message
         query = message.content[len('/research '):]
-        print('Research requested: ', query)
+        print('Research query: ', query)
+        await message.channel.send('Let me look it up for you...')
 
         # Send the query to your API
         response = requests.post('https://research-agent-gpt.onrender.com', json={"query": query})
@@ -58,10 +59,18 @@ async def on_message(message):
         if response.status_code == 200:
             # Format and send the research results to Discord
             print('Response: ', response_json)
-            await message.channel.send(response_json)
+            await send_large_message(message.channel, response_json)
         else:
             # Handle any errors that occur
             await message.channel.send('An error occurred.')
+
+
+async def send_large_message(channel, message):
+    # Split the message into chunks of 2000 characters or less
+    message_chunks = [message[i:i + 2000] for i in range(0, len(message), 2000)]
+    
+    for chunk in message_chunks:
+        await channel.send(chunk)
 
 # Run the bot
 bot.run(discord_bot_token)
